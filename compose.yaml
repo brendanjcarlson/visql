@@ -1,0 +1,18 @@
+version: "3.9"
+name: visql
+networks:
+  visql:
+    driver: bridge
+services:
+  devpg:
+    container_name: devpg
+    image: postgres:16-alpine
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: visql
+    restart: unless-stopped
+    networks:
+      - visql

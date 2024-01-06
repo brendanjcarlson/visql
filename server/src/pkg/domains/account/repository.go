@@ -18,7 +18,7 @@ func NewRepository(client *database.Client) *Repository {
 	}
 }
 
-func (r *Repository) Create(e *NewEntity) (*Entity, error) {
+func (r *Repository) Create(n *NewEntity) (*Entity, error) {
 	_, cancel := common.NewQueryContext()
 	defer cancel()
 
@@ -27,8 +27,8 @@ func (r *Repository) Create(e *NewEntity) (*Entity, error) {
         INSERT INTO accounts (email, password)
         VALUES ($1, $2)
         `,
-		e.Email,
-		e.Password,
+		n.Email,
+		n.Password,
 	)
 	if row.Err() != nil {
 		err := row.Err()
@@ -97,17 +97,17 @@ func (r *Repository) FindById(id uuid.UUID) (*Entity, error) {
 	return &found, nil
 }
 
-func (r *Repository) Update(n *Entity) (*Entity, error) {
-	o, err := r.FindById(n.Id)
+func (r *Repository) Update(u *Entity) (*Entity, error) {
+	o, err := r.FindById(u.Id)
 	if err != nil {
 		return nil, err
 	}
 
-	if n.Email == "" {
-		n.Email = o.Email
+	if u.Email == "" {
+		u.Email = o.Email
 	}
-	if n.Password == "" {
-		n.Password = o.Password
+	if u.Password == "" {
+		u.Password = o.Password
 	}
 
 	_, cancel := common.NewQueryContext()
@@ -120,9 +120,41 @@ func (r *Repository) Update(n *Entity) (*Entity, error) {
         WHERE id = $3
         RETURNING *
         `,
-		n.Email,
-		n.Password,
-		n.Id.String(),
+		u.Email,
+		u.Password,
+		u.Id.String(),
+	)
+	if row.Err() != nil {
+		return nil, row.Err()
+	}
+
+	var updated Entity
+	err = row.StructScan(&updated)
+	if err != nil {
+		return nil, err
+	}
+
+	return &updated, nil
+}
+
+func (r *Repository) UpdateOnLogin(id uuid.UUID) (*Entity, error) {
+	o, err := r.FindById(id)
+	if err != nil {
+		return nil, err
+	}
+
+	_, cancel := common.NewQueryContext()
+	defer cancel()
+
+	row := r.client.DB().QueryRowx(
+		`
+        UPDATE accounts
+        SET last_login_at = CURRENT_TIMESTAMP, login_count = $1
+        WHERE id = $2
+        RETURNING *
+        `,
+		o.LoginCount+1,
+		id.String(),
 	)
 	if row.Err() != nil {
 		return nil, row.Err()
