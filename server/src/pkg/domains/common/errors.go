@@ -26,5 +26,6 @@ func StringifyErrs(err ...error) []string {
 	for _, err := range err {
 		errMsgs = append(errMsgs, err.Error())
 	}
+
 	return errMsgs
 }

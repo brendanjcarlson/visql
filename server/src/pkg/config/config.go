@@ -19,6 +19,7 @@ func MustGet(key string) string {
 	if !ok {
 		log.Fatalf("error getting env variable: %v\n", key)
 	}
+
 	return value
 }
 
@@ -27,5 +28,6 @@ func GetOrDefault(key string, defaultValue string) string {
 	if !ok {
 		return defaultValue
 	}
+
 	return value
 }

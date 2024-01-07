@@ -5,6 +5,8 @@ import (
 
 	"github.com/brendanjcarlson/visql/server/src/pkg/config"
 	"github.com/brendanjcarlson/visql/server/src/pkg/database"
+	"github.com/brendanjcarlson/visql/server/src/pkg/domains/account"
+	"github.com/brendanjcarlson/visql/server/src/pkg/domains/auth"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -18,17 +20,27 @@ func main() {
 
 	// Configure Fiber app
 	appConfig := fiber.Config{
-		AppName: config.GetOrDefault("APP_NAME", "visql"),
+		AppName: config.MustGet("APP_NAME"),
 	}
 	// Initialize Fiber app
 	app := fiber.New(appConfig)
 
-    // Configure global middleware
+	// Configure global middleware
 
-    // Bootstrap domains
+	// Bootstrap domains
+	// account
+	accountRepository := account.NewRepository(dbClient)
 
-    // Bootstrap routes
+	// session
+	// sessionRepository := session.NewRepository(dbClient)
+
+	// auth
+	authService := auth.NewService(accountRepository)
+	authController := auth.NewController(authService)
+	auth.SetupRoutes(app, authController)
+
+	// Bootstrap routes
 
 	// Run Fiber app
-	log.Fatal(app.Listen(config.GetOrDefault("PORT", ":8080")))
+	log.Fatal(app.Listen(config.MustGet("PORT")))
 }

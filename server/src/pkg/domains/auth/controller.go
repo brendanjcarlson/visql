@@ -74,7 +74,7 @@ func (ctrl *Controller) Login(c *fiber.Ctx) error {
 		})
 	}
 
-	accessToken, RefreshToken, err := ctrl.svc.Login(&loginEntity)
+	accessToken, refreshToken, err := ctrl.svc.Login(&loginEntity)
 	if err != nil {
 		c.Status(fiber.StatusInternalServerError)
 		return c.JSON(&fiber.Map{
@@ -87,7 +87,7 @@ func (ctrl *Controller) Login(c *fiber.Ctx) error {
 	return c.JSON(&fiber.Map{
 		"message":       "login successful",
 		"access_token":  accessToken,
-		"refresh_token": RefreshToken,
+		"refresh_token": refreshToken,
 	})
 }
 

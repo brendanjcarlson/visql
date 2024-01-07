@@ -39,7 +39,6 @@ func (svc *Service) Login(loginAccount *account.LoginEntity) (string, string, er
 	if err != nil {
 		return "", "", err
 	}
-
 	if acc == nil {
 		return "", "", errors.New("invalid credentials")
 	}
@@ -52,7 +51,15 @@ func (svc *Service) Login(loginAccount *account.LoginEntity) (string, string, er
 		return "", "", errors.New("invalid credentials")
 	}
 
-	// generate access and refresh tokens
+	accessToken, err := GenerateAccessToken(acc)
+	if err != nil {
+		return "", "", err
+	}
 
-	return "access_token", "refresh_token", nil
+	refreshToken, err := GenerateRefreshToken(acc)
+	if err != nil {
+		return "", "", err
+	}
+
+	return accessToken, refreshToken, nil
 }

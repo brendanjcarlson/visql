@@ -22,11 +22,10 @@ func (r *Repository) Create(n *NewEntity) (*Entity, error) {
 	_, cancel := common.NewQueryContext()
 	defer cancel()
 
-	row := r.client.DB().QueryRowx(
-		`
-        INSERT INTO accounts (email, password)
-        VALUES ($1, $2)
-        `,
+	row := r.client.DB().QueryRowx(`
+        INSERT INTO accounts (full_name, email, password)
+        VALUES ($1, $2, $3)`,
+		n.FullName,
 		n.Email,
 		n.Password,
 	)
@@ -51,12 +50,10 @@ func (r *Repository) FindByEmail(email string) (*Entity, error) {
 	_, cancel := common.NewQueryContext()
 	defer cancel()
 
-	row := r.client.DB().QueryRowx(
-		`
+	row := r.client.DB().QueryRowx(`
         SELECT *
         FROM accounts
-        WHERE email = $1
-        `,
+        WHERE email = $1`,
 		email,
 	)
 	if row.Err() != nil {
@@ -76,12 +73,10 @@ func (r *Repository) FindById(id uuid.UUID) (*Entity, error) {
 	_, cancel := common.NewQueryContext()
 	defer cancel()
 
-	row := r.client.DB().QueryRowx(
-		`
+	row := r.client.DB().QueryRowx(`
         SELECT *
         FROM accounts
-        WHERE id = $1
-        `,
+        WHERE id = $1`,
 		id.String(),
 	)
 	if row.Err() != nil {
@@ -113,13 +108,11 @@ func (r *Repository) Update(u *Entity) (*Entity, error) {
 	_, cancel := common.NewQueryContext()
 	defer cancel()
 
-	row := r.client.DB().QueryRowx(
-		`
+	row := r.client.DB().QueryRowx(`
         UPDATE accounts
         SET email = $1, password = $2
         WHERE id = $3
-        RETURNING *
-        `,
+        RETURNING *`,
 		u.Email,
 		u.Password,
 		u.Id.String(),
@@ -146,13 +139,11 @@ func (r *Repository) UpdateOnLogin(id uuid.UUID) (*Entity, error) {
 	_, cancel := common.NewQueryContext()
 	defer cancel()
 
-	row := r.client.DB().QueryRowx(
-		`
+	row := r.client.DB().QueryRowx(`
         UPDATE accounts
         SET last_login_at = CURRENT_TIMESTAMP, login_count = $1
         WHERE id = $2
-        RETURNING *
-        `,
+        RETURNING *`,
 		o.LoginCount+1,
 		id.String(),
 	)
@@ -173,12 +164,10 @@ func (r *Repository) Delete(id uuid.UUID) (*Entity, error) {
 	_, cancel := common.NewQueryContext()
 	defer cancel()
 
-	row := r.client.DB().QueryRowx(
-		`
+	row := r.client.DB().QueryRowx(`
         DELETE FROM accounts
         WHERE id = $1
-        RETURNING *
-        `,
+        RETURNING *`,
 		id.String(),
 	)
 	if row.Err() != nil {

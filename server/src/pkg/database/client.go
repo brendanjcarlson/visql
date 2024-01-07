@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/brendanjcarlson/visql/server/src/pkg/config"
+	"github.com/brendanjcarlson/visql/server/src/pkg/domains/common"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
@@ -58,6 +59,8 @@ func MustConnect() *Client {
 		db: db,
 	}
 
+	newClient.mustSync()
+
 	return newClient
 }
 
@@ -70,4 +73,61 @@ func (c *Client) MustClose() {
 
 func (c *Client) DB() *sqlx.DB {
 	return c.db
+}
+
+func (c *Client) mustSync() {
+	c.mustSyncAccountsTable()
+}
+
+func (c *Client) checkTableExists(tableName string) (bool, error) {
+	row := c.db.QueryRowx(`
+        SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = 'public'
+            AND table_name = $1
+        )`,
+		tableName,
+	)
+	if row.Err() != nil {
+		return false, row.Err()
+	}
+
+	var exists bool
+	err := row.Scan(&exists)
+	if err != nil {
+		fmt.Println("error scanning in check table exists")
+		return false, err
+	}
+
+	if !exists {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func (c *Client) mustSyncAccountsTable() {
+	exists, err := c.checkTableExists("accounts")
+	if err != nil {
+		log.Fatalf("failed to check if accounts table exists: %v\n", err.Error())
+	}
+
+	if !exists {
+		_, cancel := common.NewQueryContext()
+		defer cancel()
+
+		c.db.MustExec(`
+            CREATE TABLE accounts (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE,
+                last_login_at TIMESTAMP WITH TIME ZONE,
+                login_count INTEGER DEFAULT 0,
+                full_name TEXT NOT NULL,
+                email TEXT NOT NULL UNIQUE,
+                password TEXT NOT NULL
+            )
+        `)
+	}
 }
